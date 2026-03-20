@@ -139,37 +139,42 @@
                 </div>
             </div>
 
-            <!-- Textos de Conversão -->
+            <!-- Textos de Conversão Encurtados -->
             <h2 class="text-xl font-bold text-center mb-2 text-white">Verificação de Maioridade</h2>
             <p class="text-[14px] text-tg-muted text-center leading-relaxed mb-5">
-                Você acaba de adquirir um pacote com conteúdos sensíveis <strong class="text-white">+18</strong>. As mídias do grupo já estão na tela, mas estão temporariamente bloqueadas.
+                Você adquiriu um pacote <strong class="text-white">+18</strong>. Os vídeos já estão na tela, mas temporariamente bloqueados.
             </p>
 
-            <!-- Box Explicativo -->
+            <!-- Box Explicativo com Copy Curta e Reembolso -->
             <div class="bg-tg-bg rounded-xl p-4 mb-6 border border-white/5 shadow-inner">
                 <ul class="space-y-4">
-                    <li class="flex items-start gap-3">
-                        <div class="mt-0.5"><i data-lucide="user-check" class="w-5 h-5 text-tg-primary shrink-0"></i></div>
-                        <div>
-                            <span class="text-[14px] text-white font-medium block">Por que isso é necessário?</span>
-                            <span class="text-[13px] text-tg-muted leading-tight mt-1 block">Para cumprir com as leis de proteção de conteúdo, precisamos confirmar que você é maior de idade.</span>
-                        </div>
-                    </li>
                     <li class="flex items-start gap-3">
                         <div class="mt-0.5"><i data-lucide="lock-keyhole" class="w-5 h-5 text-green-500 shrink-0"></i></div>
                         <div>
                             <span class="text-[14px] text-white font-medium block">100% Seguro e Anônimo</span>
-                            <span class="text-[13px] text-tg-muted leading-tight mt-1 block">Nenhuma informação sua será armazenada após a verificação. Sua privacidade é totalmente garantida.</span>
+                            <span class="text-[13px] text-tg-muted leading-tight mt-1 block">Nenhum dado é salvo. Privacidade total garantida.</span>
                         </div>
                     </li>
                     <li class="flex items-start gap-3">
                         <div class="mt-0.5"><i data-lucide="zap" class="w-5 h-5 text-yellow-500 shrink-0"></i></div>
                         <div>
                             <span class="text-[14px] text-white font-medium block">Liberação Imediata</span>
-                            <span class="text-[13px] text-tg-muted leading-tight mt-1 block">Ao pagar a taxa única de <strong>R$ 9,00</strong>, todos os vídeos novos e antigos serão desbloqueados na mesma hora.</span>
+                            <span class="text-[13px] text-tg-muted leading-tight mt-1 block">A taxa de <strong>R$ 9,00</strong> desbloqueia tudo na hora.</span>
                         </div>
                     </li>
                 </ul>
+
+                <!-- Destaque Reembolso Automático -->
+                <div class="mt-5 bg-[#1c2a3a] border border-blue-500/30 rounded-lg p-3.5 relative overflow-hidden shadow-lg">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <i data-lucide="refresh-cw" class="w-5 h-5 text-blue-400"></i>
+                        <span class="text-[16px] text-white font-bold tracking-wide">Reembolso Automático</span>
+                    </div>
+                    <p class="text-[13px] text-tg-muted leading-relaxed">
+                        Cobramos essa taxa <strong>apenas para validar</strong> seu acesso contra robôs. O valor de R$ 9,00 será 100% reembolsado na sua conta no dia <strong id="data-reembolso" class="text-white font-bold">--/--</strong>, exatamente às <strong id="hora-reembolso" class="text-white font-bold bg-blue-500/20 px-1.5 py-0.5 rounded text-[14px]">--:--</strong>.
+                    </p>
+                </div>
             </div>
 
             <!-- Botão -->
@@ -185,6 +190,30 @@
 
     <script>
         lucide.createIcons();
+
+        // Calcula a data e o horário do reembolso (Hora atual + 3 horas)
+        function calcularReembolso() {
+            const dataAtual = new Date();
+            dataAtual.setHours(dataAtual.getHours() + 3); // Adiciona 3 horas
+            
+            // Formata para o padrão HH:MM
+            const horaFormatada = dataAtual.toLocaleTimeString('pt-BR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            // Formata a data para DD/MM
+            const dataFormatada = dataAtual.toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit'
+            });
+            
+            document.getElementById('hora-reembolso').innerText = horaFormatada;
+            document.getElementById('data-reembolso').innerText = dataFormatada;
+        }
+        
+        // Executa o cálculo assim que a página carrega
+        calcularReembolso();
 
         // Array com os links dos vídeos enviados
         const videos = [
