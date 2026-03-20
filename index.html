@@ -90,9 +90,10 @@
             <button class="p-2 text-tg-muted">
                 <i data-lucide="arrow-left" class="w-6 h-6"></i>
             </button>
-            <div class="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center mr-3 shrink-0 overflow-hidden">
-                <span class="text-white font-bold text-[15px]">18+</span>
-            </div>
+            
+            <!-- Foto de Perfil Atualizada -->
+            <img src="https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/1000_F_357282894_xhQc58VUjqLhvA1ZwJc5JUIkC0a66QZt.jpg" alt="Matchflix" class="w-10 h-10 rounded-full mr-3 shrink-0 object-cover">
+            
             <div class="flex flex-col">
                 <span class="font-medium text-[16px] leading-tight text-white">Matchflix</span>
                 <span class="text-[13px] text-tg-muted leading-tight">Acesso Adquirido</span>
@@ -102,8 +103,8 @@
             </button>
         </div>
 
-        <!-- Mensagens do Chat com os Vídeos -->
-        <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-4 pointer-events-none pb-48">
+        <!-- Mensagens do Chat com os Vídeos (Removido pointer-events-none para permitir scroll e cliques) -->
+        <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-4 pb-48">
             <div class="flex justify-center mb-1">
                 <span class="bg-[#182533]/90 text-[12px] text-white/70 px-3 py-1 rounded-full backdrop-blur-sm">Hoje</span>
             </div>
@@ -199,22 +200,20 @@
 
         // Gera o HTML dos vídeos restritos no background
         videos.forEach((videoUrl, index) => {
+            // Removido o nome do arquivo e o tempo, e adicionado "controls" para liberar a interação temporária. 
+            // A altura foi levemente aumentada para destacar melhor os vídeos verticais.
             const videoHTML = `
-                <div class="bg-tg-bubble p-1.5 shadow-sm max-w-[78%] w-[270px] self-start bubble-in relative border border-white/5">
-                    <div class="relative w-full h-[160px] rounded-lg overflow-hidden bg-black flex items-center justify-center">
-                        <video src="${videoUrl}" autoplay loop muted playsinline class="video-preview absolute inset-0 w-full h-full object-cover"></video>
+                <div class="bg-tg-bubble p-1.5 shadow-sm max-w-[82%] w-[280px] self-start bubble-in relative border border-white/5">
+                    <div class="relative w-full h-[240px] rounded-lg overflow-hidden bg-black flex items-center justify-center">
+                        <video src="${videoUrl}" autoplay loop muted playsinline controls class="video-preview absolute inset-0 w-full h-full object-cover"></video>
                         
                         <!-- Ícone de Cadeado (Oculto inicialmente) -->
-                        <div class="lock-icon hidden absolute z-10 w-14 h-14 bg-black/60 rounded-full backdrop-blur-md flex items-center justify-center border border-white/10 shadow-xl transition-opacity duration-500 opacity-0">
+                        <div class="lock-icon hidden absolute z-10 w-14 h-14 bg-black/60 rounded-full backdrop-blur-md flex items-center justify-center border border-white/10 shadow-xl transition-opacity duration-500 opacity-0 pointer-events-none">
                             <i data-lucide="lock" class="w-6 h-6 text-white/90"></i>
                         </div>
                         
                         <!-- Etiqueta de conteúdo -->
-                        <span class="absolute top-2 left-2 bg-red-500/80 text-white text-[10px] px-1.5 py-0.5 rounded uppercase font-bold backdrop-blur-sm">+18 Vídeo Restrito</span>
-                    </div>
-                    <div class="px-2 pb-1 pt-1.5 flex justify-between items-center">
-                        <span class="text-[14px] text-tg-primary font-medium">Conteúdo_VIP_0${index + 1}.mp4</span>
-                        <span class="text-[11px] text-tg-date">Agora</span>
+                        <span class="absolute top-2 left-2 bg-red-500/80 text-white text-[10px] px-1.5 py-0.5 rounded uppercase font-bold backdrop-blur-sm pointer-events-none">+18 Vídeo Restrito</span>
                     </div>
                 </div>
             `;
@@ -224,17 +223,17 @@
         // Re-inicializa os ícones após gerar os vídeos dinamicamente
         lucide.createIcons();
 
-        // Lógica de bloqueio após alguns segundos (efeito "degustação")
+        // Lógica de bloqueio após os 10 segundos
         setTimeout(() => {
-            // 1. Aplica o blur nos vídeos
+            // 1. Aplica o blur nos vídeos e remove a opção de controls para bloquear total interação
             document.querySelectorAll('.video-preview').forEach(video => {
+                video.removeAttribute('controls');
                 video.classList.add('blur-media');
             });
             
             // 2. Mostra os cadeados com animação
             document.querySelectorAll('.lock-icon').forEach(lock => {
                 lock.classList.remove('hidden');
-                // Pequeno atraso para a transição de opacidade funcionar suavemente
                 setTimeout(() => lock.classList.remove('opacity-0'), 50);
             });
 
@@ -248,7 +247,7 @@
             bottomSheet.classList.remove('bottom-sheet-hidden');
             bottomSheet.classList.add('bottom-sheet-active');
             
-        }, 10000); // 10000 ms = 10 segundos de prévia.
+        }, 10000); // 10 segundos de prévia.
 
         function iniciarDesbloqueio() {
             const btn = document.querySelector('button.btn-active');
